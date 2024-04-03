@@ -1,0 +1,581 @@
+
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter API Dropdown',
+      home: MyHomePage(),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  // Placeholder for selected item
+  String selectedItem = 'Select an item';
+
+  // List to store data fetched from API
+  List<String> items = [];
+// Fetch data from API
+  Future<void> fetchData() async {
+    final response = await http.get(Uri.parse('https://api.example.com/data'));
+
+    if (response.statusCode == 200) {
+      // Parse the JSON response and update the items list
+      final List<dynamic> data = json.decode(response.body);
+      setState(() {
+        items = List<String>.from(data);
+      });
+    } else {
+      // Handle error
+      print('Failed to fetch data: ${response.statusCode}');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('API Dropdown Example'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // DropdownButton to select an item
+            DropdownButton<String>(
+              value: selectedItem,
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedItem = newValue!;
+                });
+              },
+              items: items.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 20),
+            // Display selected item
+            Text('Selected Item: $selectedItem'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+///////////////////////////////////////////////////////////////
+
+import 'package:flutter/material.dart';
+
+/// Flutter code sample for [DropdownMenu].
+
+const List<String> list = <String>['One', 'Two', 'Three', 'Four'];
+
+void main() => runApp(const DropdownMenuApp());
+
+class DropdownMenuApp extends StatelessWidget {
+  const DropdownMenuApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      home: Scaffold(
+        appBar: AppBar(title: const Text('DropdownMenu Sample')),
+        body: const Center(
+          child: DropdownMenuExample(),
+        ),
+      ),
+    );
+  }
+}
+
+class DropdownMenuExample extends StatefulWidget {
+  const DropdownMenuExample({super.key});
+
+  @override
+  State<DropdownMenuExample> createState() => _DropdownMenuExampleState();
+}
+
+class _DropdownMenuExampleState extends State<DropdownMenuExample> {
+  String dropdownValue = list.first;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownMenu<String>(
+      initialSelection: list.first,
+      onSelected: (String? value) {
+        // This is called when the user selects an item.
+        setState(() {
+          dropdownValue = value!;
+        });
+      },
+      dropdownMenuEntries: list.map<DropdownMenuEntry<String>>((String value) {
+        return DropdownMenuEntry<String>(value: value, label: value);
+      }).toList(),
+    );
+  }
+}
+
+
+/////////////////////////////////////
+
+// member invite //
+
+class MemberInvite extends StatefulWidget {
+  MemberInvite({super.key, required this.userworkspace});
+  dynamic userworkspace;
+
+  @override
+  State<MemberInvite> createState() => _MemberInviteState();
+}
+
+class _MemberInviteState extends State<MemberInvite> {
+
+  String? selectedChannel;
+  int? selectedChannelId;
+  List<Map<String, dynamic>> channels = [];
+  
+  String email = "";
+  String? token = "";
+  int? workspace_id;
+  int? user_id;
+
+  Future<void> fetchData() async {
+    token = await SharedPrefUtils.getStr("token");
+    workspace_id = await SharedPrefUtils.getInt("workspaceid");
+    user_id = await SharedPrefUtils.getInt("userid");
+   
+    final response = await http.get(Uri.parse("http://10.0.2.2:8000/home?workspace_id=$workspace_id&user_id=$user_id"), headers: {
+      'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json; charset=UTF-8',
+    },);
+
+    final dynamic gethome = json.decode(response.body);
+
+    if(gethome.statusCode == 200){
+      setState(() {
+        channels = gethome['m_channels'];
+     });
+    }
+
+    final geterror = await http.get(
+      Uri.parse("http://10.0.2.2:8000/member_invitation?workspace_id=$workspace_id&user_id=$user_id"),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    );     
+
+    
+
+    final dynamic inviteerror = json.decode(geterror.body);
+      
+    if (response.statusCode == 200) {
+      // print(body['m_channels']);
+      // print("##############################################");
+   
+   }   
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar:MyAppBarWidget(),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 30,),
+            Center(
+              child: Text('メンバーを招待する',
+              style: TextStyle(
+                fontSize: 28,
+                ),
+              ),
+            ),
+            SizedBox(height: 50,),
+            Text('Workspace Name : ${widget.userworkspace}',
+            style: TextStyle(
+                fontSize: 23,            
+              ),
+            ),
+            SizedBox(height: 20,),
+           
+            Text('Channel Name : ',
+            style: TextStyle(
+                fontSize: 23,            
+              ),
+            ),
+
+            DropdownButton<String>(
+              value: selectedChannel,
+              items: channels.map((channel) {
+                return DropdownMenuItem<String>(
+                  value: channel['name'],
+                  child: Text(channel['name']),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedChannel = value;
+                  selectedChannelId = channels.firstWhere(
+                    (channel) => channel['name'] == value,
+                  )['id'];
+                });
+              },
+              hint: Text('Select Channel'),
+            ),
+
+           SizedBox(height: 30,),
+            Text('Email',
+            style: TextStyle(
+              fontSize: 23,
+              ),
+            ),
+            SizedBox(height: 5,),
+            SizedBox(
+              width: 600,
+              child: TextField(
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(5))
+                ),
+              ),
+            ),
+            SizedBox(height: 20,),
+            SizedBox(
+              width: 400,
+              height: 65,
+              child: TextButton(
+                onPressed: (){}, 
+                child: const Text(
+                  'Invite Member',
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      drawer: Leftpannel(),
+    );
+  }
+}
+
+
+
+
+
+
+
+////////////////////////////////////
+
+ body: Column(
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Center(
+              child: Container(
+                child: const Text(
+                  'User Manage',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 5,),
+          const SingleChildScrollView(
+            child: Row(
+              children: [
+                Text('ユーザ名とメールアドレス',
+                  style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(width: 50,),
+                Text('セットアップ',
+                  style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          //ADMIN///////////
+          ListView.builder(
+            shrinkWrap: true,
+            itemCount: user_manages_admin.length,
+            itemBuilder: (context, index) {
+              final adminActive = user_manages_admin[index];
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                        //Name For Fist Row 
+                        Row(
+                        children: [
+                          SizedBox(
+                            width: 250,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  adminActive['name'],
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 60,),
+                          //- For First Row
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              TextButton(onPressed :() {
+                                
+                              }, child: Text('-',
+                              style: TextStyle(fontWeight: FontWeight.bold,fontSize: 25),
+                              ),
+                              style: TextButton.styleFrom(
+                                
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    //Email For First Row
+                    Row(
+                        children: [
+                          SizedBox(
+                            width: 250,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  adminActive['email'],
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ), 
+          //Activate User////////
+          ListView.builder(
+            shrinkWrap: true,
+            itemCount: user_manages_activate.length,
+            itemBuilder: (context, index) {
+              final userActive = user_manages_activate[index];
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                        //Name For First Row For Activate User 
+                        Row(
+                        children: [
+                          SizedBox(
+                            width: 250,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  userActive['name'],
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 60,),
+                          //Button For Activate User
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              TextButton(onPressed :() {
+                                setState(() {
+                                  RemoveFromWorkspace(userActive['id']);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => UserManage(),
+                                      ),
+                                    );
+                                });
+                              },child: Text('解除',
+                                style: TextStyle(
+                                decoration: TextDecoration.underline,
+                                decorationThickness: 2,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                ),
+                              ),  
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    //Email For Second Row In Activate User
+                    Row(
+                        children: [
+                          SizedBox(
+                            width: 250,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  userActive['email'],
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            //Deactivate User
+          ListView.builder(
+              shrinkWrap: true,
+              itemCount: user_manages_deactivate.length,
+              itemBuilder: (context, index) {
+                final userDeactive = user_manages_deactivate[index];
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                          //Fist Row 
+                          Row(
+                          children: [
+                            SizedBox(
+                              width: 250,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userDeactive['name'],
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 60,),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                TextButton(onPressed :() {
+                                  setState(() {
+                                    AddToWorkspace(userDeactive['id']);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => 
+                                        UserManage(),
+                                        ),
+                                      );
+                                  });
+                                },child: Text('有効',
+                                  style: TextStyle(
+                                  decoration: TextDecoration.underline,
+                                  decorationThickness: 2,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  ),
+                                ),  
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      //Email
+                      Row(
+                          children: [
+                            SizedBox(
+                              width: 250,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userDeactive['email'],
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+
+        haruuuuuuuuuuuuuuuuuuuuuuuu@gmail.com
